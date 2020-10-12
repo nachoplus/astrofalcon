@@ -4,13 +4,13 @@ AutoExpTargetBrightness: 100
 BandWidth: 40
 CoolPowerPerc: 0
 CoolerOn: 0
-Exposure: 33079
+Exposure: 29948
 Flip: 0
 Gain: 230
 HighSpeedMode: 0
 MonoBin: 0
 Offset: 8
 TargetTemp: 0
-Temperature: 300
+Temperature: 235
 WB_B: 95
 WB_R: 52
