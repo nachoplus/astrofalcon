@@ -1,0 +1,3 @@
+zwoasi
+imagezmq
+opencv-python

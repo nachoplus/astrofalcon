@@ -4,6 +4,7 @@ import argparse
 import os
 import sys
 import time
+import datetime
 import zwoasi as asi
 import imagezmq
 import socket
@@ -71,45 +72,49 @@ for cn in sorted(controls.keys()):
 
 
 # Use minimum USB bandwidth permitted
-camera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, camera.get_controls()['BandWidth']['MinValue'])
+#camera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, camera.get_controls()['BandWidth']['MinValue'])
+camera.set_control_value(asi.ASI_HIGH_SPEED_MODE, 1)
+camera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, camera.get_controls()['BandWidth']['MaxValue'])
 
 # Set some sensible defaults. They will need adjusting depending upon
 # the sensitivity, lens and lighting conditions used.
 camera.disable_dark_subtract()
 
-camera.set_control_value(asi.ASI_GAIN, 100)
-camera.set_control_value(asi.ASI_EXPOSURE, 10000)
+camera.set_control_value(asi.ASI_GAIN, 560)
+camera.set_control_value(asi.ASI_EXPOSURE, 300000)
 camera.set_control_value(asi.ASI_WB_B, 50)
 camera.set_control_value(asi.ASI_WB_R, 50)
-camera.set_control_value(asi.ASI_GAMMA, 50)
-camera.set_control_value(asi.ASI_BRIGHTNESS,50)
+camera.set_control_value(asi.ASI_GAMMA, 40)
+camera.set_control_value(asi.ASI_BRIGHTNESS,40)
 
 # Accept connections on all tcp addresses, port 5555
 sender = imagezmq.ImageSender(connect_to='tcp://*:5555' ,REQ_REP=False) 
 camera.set_control_value(asi.ASI_FLIP, 0)
 
 camera.set_image_type(asi.ASI_IMG_RGB24)
-camera.set_roi_start_position(0,0)
-#camera.set_roi_format(1500,500,1,asi.ASI_IMG_RGB24)
+#camera.set_roi_format(800*1,400*1,1,asi.ASI_IMG_RGB24)
+#camera.set_roi_start_position(0,0)
 camera.start_video_capture()
 img=camera.capture_video_frame()
 #percent by which the image is resized
 scale_percent = 20
 
-#calculate the 50 percent of original dimensions
 width = int(img.shape[1] * scale_percent / 100)
 height = int(img.shape[0] * scale_percent / 100)
 
 # dsize
 dsize = (width, height)
+#dsize = (1600, 1000)
 
 while True:
     img=camera.capture_video_frame()
-
+    timestamp = datetime.datetime.now()
+    cv2.putText(img, timestamp.strftime(
+          "%A %d %B %Y %I:%M:%S%p"), (10,  50),
+          cv2.FONT_HERSHEY_SIMPLEX, 1.35, (0, 0, 255), 1)
     resized=cv2.resize(img,dsize,cv2.INTER_NEAREST)
-    #encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 80]
-    #result, encimg = cv2.imencode('.jpg', resized, encode_param)
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+    result, encimg = cv2.imencode('.jpg', resized, encode_param)
     sender.send_image('resized', resized)
     #sender.send_image('resizedRAW', resized)
     #sender.send_image('resizedJPG', encimg)
-    time.sleep(0.0001)
