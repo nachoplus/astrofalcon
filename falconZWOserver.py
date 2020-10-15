@@ -64,7 +64,7 @@ class ZWOcamera:
         self.camera = asi.Camera(camera_id)
         self.camera_info = self.camera.get_camera_property()
         self.controls = self.camera.get_controls()
-        self.controls_values =camera.get_control_values()
+        self.controls_values =self.camera.get_control_values()
         self.init()
         # Accept connections on all tcp addresses, port 5555
         self.sender = imagezmq.ImageSender(connect_to='tcp://*:5555' ,REQ_REP=False)
@@ -130,7 +130,7 @@ class ZWOcamera:
             values['times_interval'] = str(interval)
             values['image_type'] = 'jpg'
             values['camera_info']=self.camera_info
-            values['controls']=self.controls_values
+            values['controls']=self.camera.controls_values()
 
             resized=cv2.resize(img,dsize,cv2.INTER_NEAREST)
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
