@@ -130,7 +130,8 @@ class ZWOcamera:
             values['times_interval'] = str(interval)
             values['image_type'] = 'jpg'
             values['camera_info']=self.camera_info
-            values['controls']=self.camera.controls_values()
+            values['controls']=self.controls
+            values['controls_values']=self.camera.get_control_values()
 
             resized=cv2.resize(img,dsize,cv2.INTER_NEAREST)
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
