@@ -4,8 +4,8 @@ import imagezmq
 import zmq
 import numpy as np
 import json
-import argparse
 from functools import partial
+import argparse
 import logging
 
 class ValWithCallback(object):
@@ -76,7 +76,6 @@ if __name__ == '__main__':
         help="ip address of Camera Server")
 
     args = vars(ap.parse_args())
-    print(args['cameraServerIP'])
     logging.info(f"Connecting to:{args['cameraServerIP']}...")
     viewer=falconViewer(args['cameraServerIP'])
     logging.info(f"{args['cameraServerIP']} CONNETED")

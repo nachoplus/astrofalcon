@@ -15,6 +15,8 @@ import json
 app = Flask(__name__)
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconHTTP %(message)s',level=logging.DEBUG)
+
+
 def generate():
     cameraServerIP=app.config.get('cameraServerIP')
     # grab global references to the output frame and lock variables
