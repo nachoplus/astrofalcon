@@ -7,25 +7,38 @@ import json
 from functools import partial
 import argparse
 import logging
+import threading
 
-class ValWithCallback(object):
-    def __init__(self, val=0):
-        self.val = val
-    def change(self, val):
-        self.val = val
+
+logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',level=logging.DEBUG)
+
 
 class falconViewer:
     def __init__(self,cameraServerIP):
-        logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',level=logging.DEBUG)
         logging.info("Starting falcon Camara Viewer")
         self.image_hub = imagezmq.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
         queue, image = self.image_hub.recv_image()
         msg=json.loads(queue)
         self.controls=msg['controls']
-        print(self.controls)
         self.zmqcontext = zmq.Context()
         self.CmdSocket = self.zmqcontext.socket(zmq.REQ)
         self.CmdSocket.connect(f'tcp://{cameraServerIP}:5556')
+        self.msg=None
+        self.update()
+
+    def update(self):
+        if not self.msg is None:
+            self.control_values=self.msg['controls_values']
+            self.set_trackbars()
+        threading.Timer(.10, self.update).start()
+
+
+
+    def set_trackbars(self):
+        values=self.control_values
+        for key,cn in self.controls.items():
+            if cv2.getTrackbarPos(f'{key}', 'FalconViewer')!=values[key]:
+                cv2.setTrackbarPos(f'{key}', 'FalconViewer', values[key]) 
 
     def cb(self,key,x):
         cn=self.controls[key]
@@ -54,19 +67,19 @@ class falconViewer:
                 mult=1000
             else:
                 mult=1
-            cv2.createTrackbar(f'{key}{ mult if mult!=1 else ""}', 'FalconViewer',\
+            cv2.createTrackbar(f'{key}', 'FalconViewer',\
                  int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
 
 
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_image()
-            msg=json.loads(queue)
-            logging.debug(f'times_interval:{msg["times_interval"]}')
-            if msg['image_type']=='jpg':
+            self.msg=json.loads(queue)
+            logging.debug(f'times_interval:{self.msg["times_interval"]}')
+            if self.msg['image_type']=='jpg':
                 img=cv2.imdecode(image,1)
             else:
                 img=image
-            cv2.imshow('FalconViewer', img)
+            cv2.imshow('FalconViewer', img)           
             cv2.waitKey(1)
 
 if __name__ == '__main__':
