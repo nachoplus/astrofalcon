@@ -24,17 +24,17 @@ class falconViewer:
         self.CmdSocket = self.zmqcontext.socket(zmq.REQ)
         self.CmdSocket.connect(f'tcp://{cameraServerIP}:5556')
         self.msg=None
-        self.update()
+        #self.update()
 
     def update(self):
         if not self.msg is None:
-            self.control_values=self.msg['controls_values']
             self.set_trackbars()
         threading.Timer(.10, self.update).start()
 
 
 
     def set_trackbars(self):
+        self.control_values=self.msg['controls_values']
         values=self.control_values
         for key,cn in self.controls.items():
             if cv2.getTrackbarPos(f'{key}', 'FalconViewer')!=values[key]:
@@ -69,17 +69,25 @@ class falconViewer:
                 mult=1
             cv2.createTrackbar(f'{key}', 'FalconViewer',\
                  int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
-
-
+        FIRST=True
+        f=0.90
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_image()
             self.msg=json.loads(queue)
             logging.debug(f'times_interval:{self.msg["times_interval"]}')
+
             if self.msg['image_type']=='jpg':
                 img=cv2.imdecode(image,1)
             else:
                 img=image
-            cv2.imshow('FalconViewer', img)           
+
+            if FIRST:
+                self.set_trackbars()
+                accumulated=img
+                FIRST=False
+            else:
+                accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
+            cv2.imshow('FalconViewer', accumulated)           
             cv2.waitKey(1)
 
 if __name__ == '__main__':
