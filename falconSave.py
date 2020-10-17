@@ -36,10 +36,10 @@ def takePicture(cameraServerIP,numFrames,pic):
     logging.info(f"Taking {pic} frame:{picName}")
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
     result, encimg = cv2.imencode('.jpg', accumulated, encode_param)
-    cv2.namedWindow('FalconSave')
-    cv2.imshow('FalconSave', accumulated) 
-    cv2.waitKey()
-    print(cv2.imwrite(picName, encimg))
+    #cv2.namedWindow('FalconSave')
+    #cv2.imshow('FalconSave', accumulated) 
+    #cv2.waitKey()
+    print(cv2.imwrite(picName, accumulated))
     return picName
 
 if __name__ == '__main__':

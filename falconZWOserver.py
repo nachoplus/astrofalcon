@@ -83,14 +83,15 @@ class ZWOcamera:
         # Set some sensible defaults. They will need adjusting depending upon
         # the sensitivity, lens and lighting conditions used.
         self.camera.disable_dark_subtract()
-        self.camera.set_control_value(asi.ASI_GAIN, 560)
-        self.camera.set_control_value(asi.ASI_EXPOSURE, 30000)
+        self.camera.set_control_value(asi.ASI_GAIN, 570)
+        self.camera.set_control_value(asi.ASI_EXPOSURE, 500000)
         self.camera.set_control_value(asi.ASI_WB_B, 50)
         self.camera.set_control_value(asi.ASI_WB_R, 50)
-        self.camera.set_control_value(asi.ASI_GAMMA, 40)
+        self.camera.set_control_value(asi.ASI_GAMMA, 30)
         self.camera.set_control_value(asi.ASI_BRIGHTNESS,40)
         self.camera.set_control_value(asi.ASI_FLIP, 0)
         self.camera.set_image_type(asi.ASI_IMG_RGB24)
+        self.format='raw'
   
 
     def print_camera_controls(self):
@@ -110,7 +111,7 @@ class ZWOcamera:
         self.camera.start_video_capture()
         img=self.camera.capture_video_frame()
         #percent by which the image is resized
-        scale_percent = 20
+        scale_percent = 100
 
         width = int(img.shape[1] * scale_percent / 100)
         height = int(img.shape[0] * scale_percent / 100)
@@ -128,17 +129,22 @@ class ZWOcamera:
             values['times_start'] = start.strftime('%Y-%m-%d %H:%M:%S.%f')
             values['times_end'] = end.strftime('%Y-%m-%d %H:%M:%S.%f')
             values['times_interval'] = str(interval)
-            values['image_type'] = 'jpg'
+
             values['camera_info']=self.camera_info
             values['controls']=self.controls
             values['controls_values']=self.camera.get_control_values()
 
             resized=cv2.resize(img,dsize,cv2.INTER_NEAREST)
-            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-            result, encimg = cv2.imencode('.jpg', resized, encode_param)
-            self.sender.send_image(json.dumps(values), encimg)
-            #self.sender.send_image('resizedRAW', resized)
-            #self.sender.send_image('resizedJPG', encimg)
+
+            if self.format=='jpg':
+                values['image_type'] = 'jpg'
+                encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+                result, image = cv2.imencode('.jpg', resized, encode_param)
+            else:
+                values['image_type'] = 'raw'
+                image=resized
+
+            self.sender.send_image(json.dumps(values), image)
     
     def cmd(self,message):
         msg=json.loads(message)
