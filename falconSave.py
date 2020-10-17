@@ -7,7 +7,7 @@ import logging
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconHTTP %(message)s',level=logging.DEBUG)
 
-def takePicture(cameraServerIP,numFrames,pic):
+def takePicture(cameraServerIP,numFrames,format):
     image_hub = imagezmq.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
 
     FIRST=True
@@ -32,14 +32,19 @@ def takePicture(cameraServerIP,numFrames,pic):
     timestamp = datetime.datetime.now()
     text=timestamp.strftime("%Y%m%d%H%M%S")
     cameraInfo=msg['camera_info']['Name'].replace(' ','_')
-    picName=f'{text}_{cameraInfo}.{pic}'
-    logging.info(f"Taking {pic} frame:{picName}")
-    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-    result, encimg = cv2.imencode('.jpg', accumulated, encode_param)
-    #cv2.namedWindow('FalconSave')
-    #cv2.imshow('FalconSave', accumulated) 
-    #cv2.waitKey()
-    print(cv2.imwrite(picName, accumulated))
+    picName=f'{text}_{cameraInfo}.{format}'
+    logging.info(f"Taking {format} frame:{picName}")
+    if format=='jpg':
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+        result, encimg = cv2.imencode('.jpg', accumulated, encode_param)
+    else:
+        encimg=accumulated
+    cv2.imwrite(picName, encimg)
+    if False:
+        cv2.namedWindow('FalconSave')
+        cv2.imshow('FalconSave', accumulated) 
+        cv2.waitKey()
+    
     return picName
 
 if __name__ == '__main__':
@@ -51,7 +56,10 @@ if __name__ == '__main__':
     ap.add_argument("-f", "--format", type=str, default='jpg',
         help="Picture format [jpg|png|tiff]")
     args = vars(ap.parse_args())
+
     logging.info(f"Connecting to:{args['cameraServerIP']}")
     logging.info(f"Averaging {args['numFrames']} frames")
     picName=takePicture(args['cameraServerIP'],args['numFrames'],args['format'])
     logging.info(f"Save file:{picName}")
+
+

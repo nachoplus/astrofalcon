@@ -111,7 +111,7 @@ class ZWOcamera:
         self.camera.start_video_capture()
         img=self.camera.capture_video_frame()
         #percent by which the image is resized
-        scale_percent = 100
+        scale_percent = 30
 
         width = int(img.shape[1] * scale_percent / 100)
         height = int(img.shape[0] * scale_percent / 100)

@@ -26,6 +26,9 @@ class falconViewer:
         self.msg=None
         #self.update()
 
+    def rect(self,im):
+        return cv2.selectROI("FalconViewer",im, False)
+
     def update(self):
         if not self.msg is None:
             self.set_trackbars()
@@ -74,12 +77,32 @@ class falconViewer:
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_image()
             self.msg=json.loads(queue)
+            k=cv2.waitKey(1)
             logging.debug(f'times_interval:{self.msg["times_interval"]}')
-
             if self.msg['image_type']=='jpg':
                 img=cv2.imdecode(image,1)
             else:
                 img=image
+
+            if k%256 == 32:
+                record = True
+                #'MaxHeight': 2822, 'MaxWidth': 4144, 'IsColorCam': True, 'BayerPattern': 0, 'SupportedBins': [1, 2, 3, 4],
+                msg=self.msg
+                CCDsize=(int(msg['camera_info']['MaxWidth']),int(msg['camera_info']['MaxHeight']))
+                imgSize=(img.shape[1],img.shape[0])
+                fCCDsize=(CCDsize[0]/imgSize[0],CCDsize[0]/imgSize[0])
+                rect=self.rect(img)
+                newSize=(abs(rect[2]-rect[0]),abs(rect[3]-rect[1]))
+                newOrigin=(min(rect[2],rect[0]),min(rect[3],rect[1]))
+                fnewSize=(fCCDsize*newSize[0],fCCDsize*newSize[1])
+                fnewOrigin=(fCCDsize*newOrigin[0],fCCDsize*newOrigin[1])
+                logging.debug(f'CCDSize:{CCDsize} imgSize:{imgSize} fCCDsize:{fCCDsize}')
+                logging.debug(f'Selected:{rect} newSize:{newSize} newOrigin:{newOrigin}')
+                logging.debug(f'CCD:newSize:{fnewSize} newOrigin:{fnewOrigin}')
+
+                
+            if not FIRST and image.shape!=accumulated.shape:
+                FIRST=True
 
             if FIRST:
                 self.set_trackbars()
@@ -88,7 +111,7 @@ class falconViewer:
             else:
                 accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
             cv2.imshow('FalconViewer', accumulated)           
-            cv2.waitKey(1)
+
 
 if __name__ == '__main__':
     # construct the argument parser and parse command line arguments
