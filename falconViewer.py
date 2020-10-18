@@ -10,7 +10,7 @@ import logging
 import threading
 
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',level=logging.INFO)
 
 
 class falconViewer:
@@ -20,14 +20,20 @@ class falconViewer:
         queue, image = self.image_hub.recv_image()
         msg=json.loads(queue)
         self.controls=msg['controls']
+        print(self.controls)
         self.zmqcontext = zmq.Context()
         self.CmdSocket = self.zmqcontext.socket(zmq.REQ)
         self.CmdSocket.connect(f'tcp://{cameraServerIP}:5556')
         self.msg=None
         #self.update()
 
-    def rect(self,im):
-        return cv2.selectROI("FalconViewer",im, False)
+    def setROI(self,fnewOrigin,fnewSize):
+        d=dict()
+        d={'ROI':{'fnewOrigin':fnewOrigin,'fnewSize':fnewSize}}   
+        logging.info(f'Sending {d}')
+        self.CmdSocket.send_string(json.dumps(d))
+        reply = self.CmdSocket.recv()
+        logging.info(reply)        
 
     def update(self):
         if not self.msg is None:
@@ -40,8 +46,8 @@ class falconViewer:
         self.control_values=self.msg['controls_values']
         values=self.control_values
         for key,cn in self.controls.items():
-            if cv2.getTrackbarPos(f'{key}', 'FalconViewer')!=values[key]:
-                cv2.setTrackbarPos(f'{key}', 'FalconViewer', values[key]) 
+            if cv2.getTrackbarPos(f'{key}', 'FalconControls')!=values[key]:
+                cv2.setTrackbarPos(f'{key}', 'FalconControls', values[key]) 
 
     def cb(self,key,x):
         cn=self.controls[key]
@@ -54,7 +60,8 @@ class falconViewer:
             mult=1
 
         ControlType=cn['ControlType']
-        d={ControlType:x*mult}   
+        d=dict()
+        d={'set_control_value':{ControlType:x*mult}}   
         logging.info(f'Sending {d}')
         self.CmdSocket.send_string(json.dumps(d))
         reply = self.CmdSocket.recv()
@@ -62,6 +69,7 @@ class falconViewer:
 
     def run(self):
         cv2.namedWindow('FalconViewer')
+        cv2.namedWindow('FalconControls',cv2.WINDOW_NORMAL)
         for key,cn in self.controls.items():
             if not cn['IsWritable']:
                 continue
@@ -70,10 +78,11 @@ class falconViewer:
                 mult=1000
             else:
                 mult=1
-            cv2.createTrackbar(f'{key}', 'FalconViewer',\
+            cv2.createTrackbar(f'{key}', 'FalconControls',\
                  int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
         FIRST=True
-        f=0.90
+        f=0.950
+
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_image()
             self.msg=json.loads(queue)
@@ -91,25 +100,28 @@ class falconViewer:
                 CCDsize=(int(msg['camera_info']['MaxWidth']),int(msg['camera_info']['MaxHeight']))
                 imgSize=(img.shape[1],img.shape[0])
                 fCCDsize=(CCDsize[0]/imgSize[0],CCDsize[0]/imgSize[0])
-                rect=self.rect(img)
-                newSize=(abs(rect[2]-rect[0]),abs(rect[3]-rect[1]))
-                newOrigin=(min(rect[2],rect[0]),min(rect[3],rect[1]))
-                fnewSize=(fCCDsize*newSize[0],fCCDsize*newSize[1])
-                fnewOrigin=(fCCDsize*newOrigin[0],fCCDsize*newOrigin[1])
-                logging.debug(f'CCDSize:{CCDsize} imgSize:{imgSize} fCCDsize:{fCCDsize}')
-                logging.debug(f'Selected:{rect} newSize:{newSize} newOrigin:{newOrigin}')
-                logging.debug(f'CCD:newSize:{fnewSize} newOrigin:{fnewOrigin}')
-
+                rect=cv2.selectROI("FalconViewer",img, False)
+                #newSize=(abs(rect[2]-rect[0]),abs(rect[3]-rect[1]))
+                #newOrigin=(min(rect[2],rect[0]),min(rect[3],rect[1]))
+                newSize=(rect[2],rect[3])
+                newOrigin=(rect[0],rect[1])
+                fnewSize=(int(fCCDsize[0]*newSize[0]),int(fCCDsize[1]*newSize[1]))
+                fnewOrigin=(int(fCCDsize[0]*newOrigin[0]),int(fCCDsize[1]*newOrigin[1]))
+                logging.info(f'CCDSize:{CCDsize} imgSize:{imgSize} fCCDsize:{fCCDsize}')
+                logging.info(f'Selected:{rect} newSize:{newSize} newOrigin:{newOrigin}')
+                logging.info(f'CCD:newSize:{fnewSize} newOrigin:{fnewOrigin}')
+                self.setROI(fnewOrigin,fnewSize)
                 
-            if not FIRST and image.shape!=accumulated.shape:
+            if not FIRST and ((image.shape!=accumulated.shape) or (image.dtype!=accumulated.dtype)):
                 FIRST=True
 
             if FIRST:
-                self.set_trackbars()
+                #self.set_trackbars()
                 accumulated=img
                 FIRST=False
             else:
                 accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
+
             cv2.imshow('FalconViewer', accumulated)           
 
 

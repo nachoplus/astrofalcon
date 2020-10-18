@@ -16,6 +16,8 @@ import signal
 import logging
 import threading
 
+lock = threading.Lock()
+
 def threaded(fn):
     def wrapper(*args, **kwargs):
         t1 = threading.Thread(target=fn, args=args, kwargs=kwargs)
@@ -30,6 +32,9 @@ __license__ = 'MIT'
 
 
 class ZWOcamera:
+    TFORMAT_RAW=0
+    TFORMAT_JPG=1
+
     def __init__(self):
         logging.basicConfig(format='%(asctime)s %(levelname)s:falcon ZWOcamera %(message)s',level=logging.INFO)
         logging.info("Starting falcon ZWO Camera Server")
@@ -62,10 +67,7 @@ class ZWOcamera:
             logging.info('Using #%d: %s' % (camera_id, cameras_found[camera_id]))
 
         self.camera = asi.Camera(camera_id)
-        self.camera_info = self.camera.get_camera_property()
-        self.controls = self.camera.get_controls()
-        self.controls_values =self.camera.get_control_values()
-        self.init()
+        self.initCamera()
         # Accept connections on all tcp addresses, port 5555
         self.sender = imagezmq.ImageSender(connect_to='tcp://*:5555' ,REQ_REP=False)
         self.zmqcontext = zmq.Context()
@@ -76,12 +78,16 @@ class ZWOcamera:
         signal.signal(signal.SIGINT, self.signal_handler)
 
 
-    def init(self):
+    def initCamera(self):
+        self.camera_info = self.camera.get_camera_property()
+        self.controls = self.camera.get_controls()
+        self.numNativeControls=len(self.controls)
+        self.addSoftControls()
+        self.controls_values =self.camera.get_control_values()
+
         self.camera.set_control_value(asi.ASI_HIGH_SPEED_MODE, 1)
         self.camera.set_control_value(asi.ASI_BANDWIDTHOVERLOAD, self.controls['BandWidth']['MaxValue'])
 
-        # Set some sensible defaults. They will need adjusting depending upon
-        # the sensitivity, lens and lighting conditions used.
         self.camera.disable_dark_subtract()
         self.camera.set_control_value(asi.ASI_GAIN, 570)
         self.camera.set_control_value(asi.ASI_EXPOSURE, 500000)
@@ -90,39 +96,68 @@ class ZWOcamera:
         self.camera.set_control_value(asi.ASI_GAMMA, 30)
         self.camera.set_control_value(asi.ASI_BRIGHTNESS,40)
         self.camera.set_control_value(asi.ASI_FLIP, 0)
-        self.camera.set_image_type(asi.ASI_IMG_RGB24)
-        self.format='raw'
+        self.Tformat=self.TFORMAT_JPG
+        self.scale=20
+        self.HWformat=asi.ASI_IMG_RGB24
+        self.camera.set_image_type(self.HWformat)
+        self.bins=1
   
+    def addSoftControls(self):
+        softControls={'Scale': {
+                                    'Name': 'Scale',
+                                    'Description': 'Transport scale',
+                                    'MaxValue': 100,
+                                    'MinValue': 10,
+                                    'DefaultValue': 20,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 20},
+                       'Tformat': {
+                                    'Name': 'Tformat',
+                                    'Description': 'Transport format',
+                                    'MaxValue': 1,
+                                    'MinValue': 0,
+                                    'DefaultValue': 1,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 21},
+                       'HWformat': {
+                                    'Name': 'HWformat',
+                                    'Description': 'Hardware format',
+                                    'MaxValue': 2,
+                                    'MinValue': 0,
+                                    'DefaultValue':asi.ASI_IMG_RGB24,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 22},
+                       'binning': {
+                                    'Name': 'binning',
+                                    'Description': 'Binning',
+                                    'MaxValue': 3,
+                                    'MinValue': 1,
+                                    'DefaultValue': 0,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 23},
 
-    def print_camera_controls(self):
-        # Get all of the camera controls
-        print('')
-        print('Camera controls:')
-        controls=self.controls
-        for cn in sorted(controls.keys()):
-            print('    %s:' % cn)
-            for k in sorted(controls[cn].keys()):
-                print('        %s: %s' % (k, repr(controls[cn][k])))
-        return controls
+                    }
+        self.controls.update(softControls)
+
+
 
     def run(self):
-        #camera.set_roi_format(800*1,400*1,1,asi.ASI_IMG_RGB24)
-        #camera.set_roi_start_position(0,0)
         self.camera.start_video_capture()
-        img=self.camera.capture_video_frame()
-        #percent by which the image is resized
-        scale_percent = 30
-
-        width = int(img.shape[1] * scale_percent / 100)
-        height = int(img.shape[0] * scale_percent / 100)
-
-        # dsize
-        dsize = (width, height)
-        #dsize = (1600, 1000)
 
         while self.RUN:
             start=datetime.datetime.now()
-            img=self.camera.capture_video_frame()
+            with lock:
+                img=self.camera.capture_video_frame()
+            #percent by which the image is resized
+            scale_percent = self.scale
+            width = int(img.shape[1] * scale_percent / 100)
+            height = int(img.shape[0] * scale_percent / 100)
+            dsize = (width, height)
+
             end=datetime.datetime.now()
             interval=end-start
             values={}
@@ -133,10 +168,13 @@ class ZWOcamera:
             values['camera_info']=self.camera_info
             values['controls']=self.controls
             values['controls_values']=self.camera.get_control_values()
-
+            values['controls_values']['Scale']=self.scale
+            values['controls_values']['Tformat']=self.Tformat
+            values['controls_values']['HWformat']=self.HWformat
+            values['controls_values']['binning']=self.bins
             resized=cv2.resize(img,dsize,cv2.INTER_NEAREST)
 
-            if self.format=='jpg':
+            if self.Tformat==self.TFORMAT_JPG:
                 values['image_type'] = 'jpg'
                 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
                 result, image = cv2.imencode('.jpg', resized, encode_param)
@@ -145,14 +183,59 @@ class ZWOcamera:
                 image=resized
 
             self.sender.send_image(json.dumps(values), image)
+
+    def setROI(self,fnewOrigin,fnewSize):
+        with lock:
+            oldOrigin=self.camera.get_roi_start_position()
+            logging.info(f'{oldOrigin}')
+            self.camera.stop_video_capture()
+            self.camera.set_roi( start_x=oldOrigin[0]+fnewOrigin[0], start_y=oldOrigin[1]+fnewOrigin[1],
+                            width=8*int(fnewSize[0]/8),height=8*int(fnewSize[1]/8), bins=self.bins, image_type=self.HWformat)
+            self.camera.start_video_capture()
     
     def cmd(self,message):
         msg=json.loads(message)
         logging.info(msg)
-        cn=int(list(msg.keys())[0])
-        value=msg[list(msg.keys())[0]]
-        self.camera.set_control_value(cn,value)
-        return "OK"
+    
+        if 'set_control_value' in msg:
+            value=msg['set_control_value']
+            for key,v in value.items():
+                logging.info(f'{key}:{int(v)}')
+                if int(key) <self.numNativeControls:
+                    self.camera.set_control_value(int(key),int(v))
+                else:  
+                    if int(key)==20:        
+                        self.scale=int(v)
+                    if int(key)==21:
+                        if int(v)==0:
+                            self.Tformat=self.TFORMAT_RAW
+                        else:
+                            self.Tformat=self.TFORMAT_JPG
+                    if int(key)==22:
+                        if int(v)==0:
+                            self.HWformat=asi.ASI_IMG_RAW8
+                        if int(v)==1:
+                            self.HWformat=asi.ASI_IMG_RAW16
+                        if int(v)==2:
+                            self.HWformat=asi.ASI_IMG_RGB24
+                        with lock:
+                            logging.debug("Changing img format")
+                            self.camera.stop_video_capture()
+                            self.camera.set_image_type(self.HWformat)
+                            self.camera.start_video_capture()
+                            logging.debug("Changed")
+                    if int(key)==23:
+                            pass
+
+
+        if 'ROI' in msg:
+            value=msg['ROI']
+            fnewOrigin=value['fnewOrigin']
+            fnewSize=value['fnewSize']
+            self.setROI(fnewOrigin,fnewSize)
+
+
+        return 'OK'
 
     @threaded
     def zmqQueue(self):

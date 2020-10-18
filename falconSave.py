@@ -4,14 +4,18 @@ import datetime
 import json
 import argparse
 import logging
+import numpy as np
+import astropy.io.fits as pyfits
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconHTTP %(message)s',level=logging.DEBUG)
 
 def takePicture(cameraServerIP,numFrames,format):
+
     image_hub = imagezmq.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
 
     FIRST=True
-    f=0.80
+    f=1-1/numFrames
+    logging.info(f"factor:{f}")
     for i in range(numFrames):  # show streamed images until Ctrl-C
         queue, image = image_hub.recv_image()
         msg=json.loads(queue)
@@ -34,12 +38,29 @@ def takePicture(cameraServerIP,numFrames,format):
     cameraInfo=msg['camera_info']['Name'].replace(' ','_')
     picName=f'{text}_{cameraInfo}.{format}'
     logging.info(f"Taking {format} frame:{picName}")
-    if format=='jpg':
-        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-        result, encimg = cv2.imencode('.jpg', accumulated, encode_param)
-    else:
-        encimg=accumulated
-    cv2.imwrite(picName, encimg)
+
+    if format.lower() in ['jpg','jpeg','png','tiff']:
+        if format in 'jpg':
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+            result, encimg = cv2.imencode('.jpg', accumulated, encode_param)
+        else:
+            encimg=accumulated
+        cv2.imwrite(picName, encimg)
+
+    if format.lower() in ['fit','fits']:
+        if len(img.shape)>2:
+            img = np.swapaxes(accumulated, 0, 2)
+            img = np.swapaxes(img, 1, 2)
+        hdu = pyfits.PrimaryHDU(img/img.max())
+        '''
+        hdu.header['CAMERA']=msg['camera_info']
+        hdu.header['GAIN']=gain
+        hdu.header['EXPOSURE']=float(exp/1000.)
+        hdu.header['CCD-TEMP']=float(self.get_temp())
+        '''
+        hdu.header['OWNER']="NACHO MAS"
+        hdu.writeto(picName)
+
     if False:
         cv2.namedWindow('FalconSave')
         cv2.imshow('FalconSave', accumulated) 
@@ -54,7 +75,7 @@ if __name__ == '__main__':
     ap.add_argument("-n", "--numFrames", type=int, default=10,
         help="Average numFrames")
     ap.add_argument("-f", "--format", type=str, default='jpg',
-        help="Picture format [jpg|png|tiff]")
+        help="Picture format [jpg|png|fit|tiff]")
     args = vars(ap.parse_args())
 
     logging.info(f"Connecting to:{args['cameraServerIP']}")
