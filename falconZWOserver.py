@@ -7,7 +7,7 @@ import time
 import datetime
 import zwoasi as asi
 import zmq
-import imagezmq
+import imageTransport
 import argparse
 import socket
 import cv2
@@ -69,7 +69,7 @@ class ZWOcamera:
         self.camera = asi.Camera(camera_id)
         self.initCamera()
         # Accept connections on all tcp addresses, port 5555
-        self.sender = imagezmq.ImageSender(connect_to='tcp://*:5555' ,REQ_REP=False)
+        self.sender = imageTransport.ImageSender(connect_to='tcp://*:5555' ,REQ_REP=False)
         self.zmqcontext = zmq.Context()
         self.myCmdSocket = self.zmqcontext.socket(zmq.REP)        
         self.myCmdSocket.bind("tcp://*:5556")
@@ -152,14 +152,14 @@ class ZWOcamera:
             start=datetime.datetime.now()
             with lock:
                 img=self.camera.capture_video_frame()
+            end=datetime.datetime.now()
+            interval=end-start
             #percent by which the image is resized
             scale_percent = self.scale
             width = int(img.shape[1] * scale_percent / 100)
             height = int(img.shape[0] * scale_percent / 100)
             dsize = (width, height)
 
-            end=datetime.datetime.now()
-            interval=end-start
             values={}
             values['times_start'] = start.strftime('%Y-%m-%d %H:%M:%S.%f')
             values['times_end'] = end.strftime('%Y-%m-%d %H:%M:%S.%f')
@@ -178,11 +178,11 @@ class ZWOcamera:
                 values['image_type'] = 'jpg'
                 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
                 result, image = cv2.imencode('.jpg', resized, encode_param)
+                self.sender.send_jpg(json.dumps(values), image)
             else:
                 values['image_type'] = 'raw'
                 image=resized
-
-            self.sender.send_image(json.dumps(values), image)
+                self.sender.send_image(json.dumps(values), image)
 
     def setROI(self,fnewOrigin,fnewSize):
         with lock:

@@ -1,6 +1,6 @@
 # run this program on the Mac to display image streams from multiple RPis
 import cv2
-import imagezmq
+import imageTransport
 import zmq
 import numpy as np
 import json
@@ -8,32 +8,15 @@ from functools import partial
 import argparse
 import logging
 import threading
-
+import falconBase
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',level=logging.INFO)
 
 
-class falconViewer:
+class falconViewer(falconBase.falconBase):
     def __init__(self,cameraServerIP):
         logging.info("Starting falcon Camara Viewer")
-        self.image_hub = imagezmq.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
-        queue, image = self.image_hub.recv_image()
-        msg=json.loads(queue)
-        self.controls=msg['controls']
-        print(self.controls)
-        self.zmqcontext = zmq.Context()
-        self.CmdSocket = self.zmqcontext.socket(zmq.REQ)
-        self.CmdSocket.connect(f'tcp://{cameraServerIP}:5556')
-        self.msg=None
-        #self.update()
-
-    def setROI(self,fnewOrigin,fnewSize):
-        d=dict()
-        d={'ROI':{'fnewOrigin':fnewOrigin,'fnewSize':fnewSize}}   
-        logging.info(f'Sending {d}')
-        self.CmdSocket.send_string(json.dumps(d))
-        reply = self.CmdSocket.recv()
-        logging.info(reply)        
+        super().__init__(cameraServerIP)       
 
     def update(self):
         if not self.msg is None:
@@ -81,10 +64,10 @@ class falconViewer:
             cv2.createTrackbar(f'{key}', 'FalconControls',\
                  int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
         FIRST=True
-        f=0.950
+        f=0.90
 
         while True:  # show streamed images until Ctrl-C
-            queue, image = self.image_hub.recv_image()
+            queue, image = self.image_hub.recv_any()
             self.msg=json.loads(queue)
             k=cv2.waitKey(1)
             logging.debug(f'times_interval:{self.msg["times_interval"]}')
@@ -94,8 +77,6 @@ class falconViewer:
                 img=image
 
             if k%256 == 32:
-                record = True
-                #'MaxHeight': 2822, 'MaxWidth': 4144, 'IsColorCam': True, 'BayerPattern': 0, 'SupportedBins': [1, 2, 3, 4],
                 msg=self.msg
                 CCDsize=(int(msg['camera_info']['MaxWidth']),int(msg['camera_info']['MaxHeight']))
                 imgSize=(img.shape[1],img.shape[0])
@@ -121,8 +102,9 @@ class falconViewer:
                 FIRST=False
             else:
                 accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
-
-            cv2.imshow('FalconViewer', accumulated)           
+            screen=accumulated.copy()
+            self.displayBoard(screen)
+            cv2.imshow('FalconViewer', screen)           
 
 
 if __name__ == '__main__':

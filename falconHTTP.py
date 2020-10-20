@@ -1,6 +1,6 @@
 # run this program on the Mac to display image streams from multiple RPis
 import cv2
-import imagezmq
+import imageTransport
 from flask import Response
 from flask import Flask
 from flask import render_template
@@ -21,15 +21,18 @@ def generate():
     cameraServerIP=app.config.get('cameraServerIP')
     # grab global references to the output frame and lock variables
     # loop over frames from the output stream
-    image_hub = imagezmq.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
+    image_hub = imageTransport.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
     while True:
-        queue, image =image_hub.recv_image()
+        queue, image =image_hub.recv_any()
+        print(queue)
         msg=json.loads(queue)
+        
         if msg['image_type']=='jpg':
-            img=cv2.imdecode(image,1)
+            #img=cv2.imdecode(image,1)
+            encodedImage=image
         else:
             img=image
-        (flag, encodedImage) = cv2.imencode(".jpg", img)
+            (flag, encodedImage) = cv2.imencode(".jpg", img)
         # ensure the frame was successfully encoded
         # yield the output frame in the byte format
         yield(b'--frame\r\n' b'Content-Type: image/jpg\r\n\r\n' + 
