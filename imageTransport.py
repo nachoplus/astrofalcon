@@ -41,7 +41,7 @@ class ImageSender():
                           if False, a PUB socket will be created
     """
 
-    def __init__(self, connect_to='tcp://127.0.0.1:5555', REQ_REP = True,conflate=False):
+    def __init__(self, connect_to='tcp://127.0.0.1:5555', REQ_REP = True,conflate=True):
         """Initializes zmq socket for sending images to the hub.
 
         Expects an appropriate ZMQ socket at the connect_to tcp:port address:

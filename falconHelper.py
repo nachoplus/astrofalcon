@@ -32,20 +32,20 @@ def sources(image,thresholdSigma=1.5):
         logging.info(f'GLOBAL RMS:{bkg.globalrms} num sources:{len(objects)}')
         return objects,bkg,data_sub
 
-def rectangles(objects):
-        w=((objects['ymax']-objects['ymin']).astype('<f8')/4)
-        start_point=(objects['x'].astype('<f8')-w,objects['y'].astype('<f8')-w)
-        end_point=(objects['x'].astype('<f8')+w,objects['y'].astype('<f8')+w)
-        idx=objects['flux'].argmax()
-        print(start_point)
-        return start_point,end_point,idx
        
 def drawSources(objects,img):
-        start_point,end_point,idx=rectangles(objects)
-        color=(255,255,0)
-        for i,row in enumerate(objects):
-                print(start_point[i])
-                cv2.rectangle(img,start_point[i],end_point[i],color,1)
+        color=(255,0,0)
+        w=2
+        idx=objects['flux'].argmax()
+        for i,o in enumerate(objects):
+                x0=int(objects['x'][i])
+                y0=int(objects['y'][i])
+                cv2.circle(img,(x0,y0),w,color,1)
+        color=(0,0,255)
+        x0=int(objects['x'][idx])
+        y0=int(objects['y'][idx])
+        cv2.rectangle(img,(x0-w,y0-w),(x0+w,y0+w),color,1)
+        
 
 def overlayGraph(img,values,title='FWHM'):
         plt.figure()

@@ -66,7 +66,7 @@ class falconViewer(falconBase.falconBase):
             cv2.createTrackbar(f'{key}', 'FalconControls',\
                  int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
         FIRST=True
-        f=0.80
+        f=0.50
 
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_any()
@@ -131,7 +131,7 @@ class falconViewer(falconBase.falconBase):
                                
             screen=accumulated.copy()
             #screen=subtractred
-            #falconHelper.drawSources(objects,screen)
+            falconHelper.drawSources(objects,screen)
             self.displayBoard(screen)
             cv2.imshow('FalconViewer', screen)           
 
