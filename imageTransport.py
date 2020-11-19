@@ -67,7 +67,7 @@ class ImageSender():
         self.zmq_context = SerializingContext()
         self.zmq_socket = self.zmq_context.socket(socketType)
         if self.conflate:
-            self.zmq_socket.setsockopt(zmq.CONFLATE, 1)
+            self.zmq_socket.setsockopt(zmq.CONFLATE, 1)      
         self.zmq_socket.connect(address)
 
         # Assign corresponding send methods for REQ/REP mode
@@ -82,7 +82,7 @@ class ImageSender():
         self.zmq_context = SerializingContext()
         self.zmq_socket = self.zmq_context.socket(socketType)
         if self.conflate:
-            self.zmq_socket.setsockopt(zmq.CONFLATE, 1)
+            self.zmq_socket.setsockopt(zmq.CONFLATE, 1) 
         self.zmq_socket.bind(address)
 
         # Assign corresponding send methods for PUB/SUB mode
@@ -271,7 +271,7 @@ class ImageHub():
        self.zmq_context = SerializingContext()
        self.zmq_socket = self.zmq_context.socket(socketType)
        if self.conflate:
-            self.zmq_socket.setsockopt(zmq.CONFLATE, 1)
+            self.zmq_socket.setsockopt(zmq.CONFLATE, 1)   
        self.zmq_socket.setsockopt(zmq.SUBSCRIBE, b'')
        self.zmq_socket.connect(address)
 
@@ -378,7 +378,7 @@ class SerializingSocket(zmq.Socket):
     compress=False
     #PC result full scale raw 0.44s without compress 1.43 with zlib
 
-    def send_array(self, A, msg='NoName', flags=0, copy=True, track=False):
+    def send_array(self, A, msg='NoName', flags=0, copy=False, track=False):
         """Sends a numpy array with metadata and text message.
 
         Sends a numpy array with the metadata necessary for reconstructing
@@ -411,7 +411,7 @@ class SerializingSocket(zmq.Socket):
                  msg='NoName',
                  jpg_buffer=b'00',
                  flags=0,
-                 copy=True,
+                 copy=False,
                  track=False):
         """Send a jpg buffer with a text message.
 
@@ -430,7 +430,7 @@ class SerializingSocket(zmq.Socket):
         p = pickle.dumps(dataStr(md,jpg_buffer), -1)
         return self.send(p, flags, copy=copy, track=track)
 
-    def recv_array(self, flags=0, copy=True, track=False):
+    def recv_array(self, flags=0, copy=False, track=False):
         """Receives a numpy array with metadata and text message.
 
         Receives a numpy array with the metadata necessary
@@ -455,7 +455,7 @@ class SerializingSocket(zmq.Socket):
         A = np.frombuffer(d, dtype=data.md['dtype'])
         return (data.md['msg'], A.reshape(data.md['shape']))
 
-    def recv_jpg(self, flags=0, copy=True, track=False):
+    def recv_jpg(self, flags=0, copy=False, track=False):
         """Receives a jpg buffer and a text msg.
 
         Receives a jpg bytestring of an OpenCV image.
@@ -474,7 +474,7 @@ class SerializingSocket(zmq.Socket):
         data=pickle.loads(p)
         return (data.md['msg'], data.img)
 
-    def recv_any(self, flags=0, copy=True, track=False):
+    def recv_any(self, flags=0, copy=False, track=False):
         p = self.recv(flags, copy=copy, track=track)
         data=pickle.loads(p)
         if 'dtype' in data.md:

@@ -14,7 +14,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:falconBase %(message)s',le
 
 
 class falconBase:
-    def __init__(self,cameraServerIP):
+    def __init__(self,cameraServerIP='localhost'):
         logging.info("Starting falcon Camara Viewer")
         self.image_hub = imageTransport.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
         _msg, _image = self.image_hub.recv_any()
@@ -51,13 +51,13 @@ class falconBase:
             lineType)
 
     def displayBoard(self,img):
-            self.textOverlay(1,img,self.msg["times_start"])
-            self.textOverlay(2,img,self.msg["times_end"])
-            self.textOverlay(3,img,self.msg["times_interval"])
+            self.textOverlay(1,img,f'START:{self.msg["times_start"]}')
+            self.textOverlay(2,img,f'END:{self.msg["times_end"]}')
+            self.textOverlay(3,img,f'ELAPSE:{self.msg["times_interval"]}')
             now=datetime.datetime.now()
             times_end=datetime.datetime.strptime(self.msg["times_end"],'%Y-%m-%d %H:%M:%S.%f')
             self.textOverlay(4,img,now.strftime('%Y-%m-%d %H:%M:%S.%f'))
-            self.textOverlay(5,img,str(now-times_end))
+            self.textOverlay(5,img,f'Network lag: {str(now-times_end)}')
             
 
 

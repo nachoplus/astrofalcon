@@ -9,6 +9,8 @@ import argparse
 import logging
 import threading
 import falconBase
+import sep
+import falconHelper
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',level=logging.INFO)
 
@@ -64,7 +66,7 @@ class falconViewer(falconBase.falconBase):
             cv2.createTrackbar(f'{key}', 'FalconControls',\
                  int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
         FIRST=True
-        f=0.90
+        f=0.80
 
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_any()
@@ -93,8 +95,9 @@ class falconViewer(falconBase.falconBase):
                 logging.info(f'CCD:newSize:{fnewSize} newOrigin:{fnewOrigin}')
                 self.setROI(fnewOrigin,fnewSize)
                 
-            if not FIRST and ((image.shape!=accumulated.shape) or (image.dtype!=accumulated.dtype)):
+            if not FIRST and ((image.shape!=accumulated.shape) or (img.dtype!=accumulated.dtype)):
                 FIRST=True
+
 
             if FIRST:
                 #self.set_trackbars()
@@ -102,7 +105,33 @@ class falconViewer(falconBase.falconBase):
                 FIRST=False
             else:
                 accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
+                
+            if False:
+                if len(accumulated.shape)>2:
+                   img_data=cv2.cvtColor(accumulated, cv2.COLOR_RGB2GRAY).astype('<f8')
+                else:
+                   img_data=accumulated.astype('<f8')
+                bkg = sep.Background(img_data)
+                thresh = 5 * bkg.globalrms
+                data_sub = img_data - bkg
+                objects = sep.extract(data_sub, thresh)
+                logging.info(bkg.globalrms)
+                logging.info(len(objects))
+                idx=objects['flux'].argmax()
+                w=int((objects['ymax'][idx]-objects['ymin'][idx])/4)
+                start_point=(int(objects['x'][idx])-w,int(objects['y'][idx])-w)
+                end_point=(int(objects['x'][idx])+w,int(objects['y'][idx])+w)
+                color=(255,255,0)
+                cv2.rectangle(accumulated,start_point,end_point,color,1)
+                fwhm=2 * np.sqrt(np.log(2)*(objects['x2'][idx] + objects['y2'][idx]))
+                self.textOverlay(6,accumulated,f'FWHM: {fwhm}')
+                #accumulated=np.copy(data_sub).astype(np.uint8)
+            else:
+                objects,bkg,subtractred=falconHelper.sources(accumulated,thresholdSigma=5)
+                               
             screen=accumulated.copy()
+            #screen=subtractred
+            #falconHelper.drawSources(objects,screen)
             self.displayBoard(screen)
             cv2.imshow('FalconViewer', screen)           
 

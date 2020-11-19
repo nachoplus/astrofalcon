@@ -1,5 +1,5 @@
 import cv2
-import imagezmq
+import imageTransport
 import datetime
 import json
 import argparse
@@ -7,11 +7,11 @@ import logging
 import numpy as np
 import astropy.io.fits as pyfits
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:falconHTTP %(message)s',level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(levelname)s:falconSave %(message)s',level=logging.DEBUG)
 
 def takePicture(cameraServerIP,numFrames,format):
 
-    image_hub = imagezmq.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
+    image_hub = imageTransport.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
 
     FIRST=True
     f=1-1/numFrames
