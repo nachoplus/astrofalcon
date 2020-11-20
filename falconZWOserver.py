@@ -100,7 +100,7 @@ class ZWOcamera:
         self.scale=20
         self.HWformat=asi.ASI_IMG_RGB24
         self.camera.set_image_type(self.HWformat)
-        self.bins=0
+        self.bins=1
   
     def addSoftControls(self):
         softControls={'Scale': {
@@ -134,8 +134,8 @@ class ZWOcamera:
                                     'Name': 'binning',
                                     'Description': 'Binning',
                                     'MaxValue': 3,
-                                    'MinValue': 0,
-                                    'DefaultValue': 0,
+                                    'MinValue': 1,
+                                    'DefaultValue': 1,
                                     'IsAutoSupported': True,
                                     'IsWritable': True,
                                     'ControlType': 23},                                                                      
@@ -189,7 +189,7 @@ class ZWOcamera:
             oldOrigin=self.camera.get_roi_start_position()
             logging.info(f'{oldOrigin}')
             self.camera.stop_video_capture()
-            login.info(f'BINS: {self.bins}')
+            logging.info(f'BINS: {self.bins}')
             self.camera.set_roi( start_x=oldOrigin[0]+fnewOrigin[0], start_y=oldOrigin[1]+fnewOrigin[1],
                             width=8*int(fnewSize[0]/8),height=8*int(fnewSize[1]/8), bins=self.bins, image_type=self.HWformat)
             self.camera.start_video_capture()
@@ -226,7 +226,7 @@ class ZWOcamera:
                             self.camera.start_video_capture()
                             logging.debug("Changed")
                     if int(key)==23:
-                            pass
+                            self.bins=int(v)
 
 
         if 'ROI' in msg:
@@ -235,6 +235,11 @@ class ZWOcamera:
             fnewSize=value['fnewSize']
             self.setROI(fnewOrigin,fnewSize)
 
+        if 'bin' in msg:
+            value=msg['ROI']
+            fnewOrigin=value['fnewOrigin']
+            fnewSize=value['fnewSize']
+            self.setROI(fnewOrigin,fnewSize)
 
         return 'OK'
 
