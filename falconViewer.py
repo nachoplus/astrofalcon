@@ -18,8 +18,27 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',
 class falconViewer(falconBase.falconBase):
     def __init__(self,cameraServerIP):
         logging.info("Starting falcon Camara Viewer")
-        super().__init__(cameraServerIP)       
-
+        super().__init__(cameraServerIP)
+        softControls={ 'Accumulate': {
+                                    'Name': 'Accumulate',
+                                    'Description': 'Accumulate',
+                                    'MaxValue': 98,
+                                    'MinValue': 0,
+                                    'DefaultValue': 0,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 24},
+                       'Sextractor': {
+                                    'Name': 'Sextractor',
+                                    'Description': 'Sextractor',
+                                    'MaxValue': 98,
+                                    'MinValue': 0,
+                                    'DefaultValue': 0,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 25},  
+        }
+        
     def update(self):
         if not self.msg is None:
             self.set_trackbars()

@@ -138,26 +138,7 @@ class ZWOcamera:
                                     'DefaultValue': 0,
                                     'IsAutoSupported': True,
                                     'IsWritable': True,
-                                    'ControlType': 23},
-                       'Accumulate': {
-                                    'Name': 'Accumulate',
-                                    'Description': 'Accumulate',
-                                    'MaxValue': 98,
-                                    'MinValue': 0,
-                                    'DefaultValue': 0,
-                                    'IsAutoSupported': True,
-                                    'IsWritable': True,
-                                    'ControlType': 24},
-                       'Sextractor': {
-                                    'Name': 'Sextractor',
-                                    'Description': 'Sextractor',
-                                    'MaxValue': 98,
-                                    'MinValue': 0,
-                                    'DefaultValue': 0,
-                                    'IsAutoSupported': True,
-                                    'IsWritable': True,
-                                    'ControlType': 25},
-                                                                        
+                                    'ControlType': 23},                                                                      
 
                     }
         self.controls.update(softControls)
@@ -208,6 +189,7 @@ class ZWOcamera:
             oldOrigin=self.camera.get_roi_start_position()
             logging.info(f'{oldOrigin}')
             self.camera.stop_video_capture()
+            login.info(f'BINS: {self.bins}')
             self.camera.set_roi( start_x=oldOrigin[0]+fnewOrigin[0], start_y=oldOrigin[1]+fnewOrigin[1],
                             width=8*int(fnewSize[0]/8),height=8*int(fnewSize[1]/8), bins=self.bins, image_type=self.HWformat)
             self.camera.start_video_capture()
