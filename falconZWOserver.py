@@ -100,7 +100,7 @@ class ZWOcamera:
         self.scale=20
         self.HWformat=asi.ASI_IMG_RGB24
         self.camera.set_image_type(self.HWformat)
-        self.bins=1
+        self.bins=0
   
     def addSoftControls(self):
         softControls={'Scale': {
@@ -134,11 +134,30 @@ class ZWOcamera:
                                     'Name': 'binning',
                                     'Description': 'Binning',
                                     'MaxValue': 3,
-                                    'MinValue': 1,
+                                    'MinValue': 0,
                                     'DefaultValue': 0,
                                     'IsAutoSupported': True,
                                     'IsWritable': True,
                                     'ControlType': 23},
+                       'Accumulate': {
+                                    'Name': 'Accumulate',
+                                    'Description': 'Accumulate',
+                                    'MaxValue': 98,
+                                    'MinValue': 0,
+                                    'DefaultValue': 0,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 24},
+                       'Sextractor': {
+                                    'Name': 'Sextractor',
+                                    'Description': 'Sextractor',
+                                    'MaxValue': 98,
+                                    'MinValue': 0,
+                                    'DefaultValue': 0,
+                                    'IsAutoSupported': True,
+                                    'IsWritable': True,
+                                    'ControlType': 25},
+                                                                        
 
                     }
         self.controls.update(softControls)
