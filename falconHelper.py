@@ -25,7 +25,10 @@ def average(img,imagesStack,n=20):
                 nimages=n
                 imagesStack.pop(0)
         # For averaging create an empty array, then add images to this array.
-        img_avg=np.zeros((img.shape[0],img.shape[1],img.shape[2]),np.float32)
+        if len(img.shape)>2:
+                img_avg=np.zeros((img.shape[0],img.shape[1],img.shape[2]),np.float32)
+        else:
+                img_avg=np.zeros((img.shape[0],img.shape[1]),np.float32)
         for im in imagesStack:
             img_avg=img_avg+im/nimages
             #img_avg=img_avg+im

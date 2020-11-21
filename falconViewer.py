@@ -126,7 +126,7 @@ class falconViewer(falconBase.falconBase):
                 if False:
                         accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
                 else:
-                        accumulated=falconHelper.average(img,imageStack,n=30)                
+                        accumulated=falconHelper.average(img,imageStack,n=50)                
 
                 
             if False:

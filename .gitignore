@@ -3,3 +3,5 @@ env
 output
 __pycache__
 .ipynb_checkpoints
+*.fit
+*.tiff
