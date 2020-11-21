@@ -85,7 +85,7 @@ class falconViewer(falconBase.falconBase):
             cv2.createTrackbar(f'{key}', 'FalconControls',\
                  int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
         FIRST=True
-        f=0.50
+        f=0.85
 
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_any()
@@ -117,13 +117,17 @@ class falconViewer(falconBase.falconBase):
             if not FIRST and ((image.shape!=accumulated.shape) or (img.dtype!=accumulated.dtype)):
                 FIRST=True
 
-
             if FIRST:
                 #self.set_trackbars()
                 accumulated=img
+                imageStack=[]
                 FIRST=False
             else:
-                accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
+                if False:
+                        accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
+                else:
+                        accumulated=falconHelper.average(img,imageStack,n=30)                
+
                 
             if False:
                 if len(accumulated.shape)>2:
@@ -150,7 +154,7 @@ class falconViewer(falconBase.falconBase):
                                
             screen=accumulated.copy()
             #screen=subtractred
-            falconHelper.drawSources(objects,screen)
+            #falconHelper.drawSources(objects,screen)
             self.displayBoard(screen)
             cv2.imshow('FalconViewer', screen)           
 

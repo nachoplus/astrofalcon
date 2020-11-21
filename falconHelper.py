@@ -16,8 +16,22 @@ import matplotlib.pyplot as plt
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconHelper %(message)s',level=logging.DEBUG)
 
 
-def average(img,oldimg):
-        pass
+
+def average(img,imagesStack,n=20):
+        # Generate noisy images using cv2.randn. Can use your own mean and std.
+        imagesStack.append(img)
+        nimages=len(imagesStack)
+        if nimages>n:
+                nimages=n
+                imagesStack.pop(0)
+        # For averaging create an empty array, then add images to this array.
+        img_avg=np.zeros((img.shape[0],img.shape[1],img.shape[2]),np.float32)
+        for im in imagesStack:
+            img_avg=img_avg+im/nimages
+            #img_avg=img_avg+im
+        # Round the float values. Always specify the dtype
+        img_avg=np.array(np.round(img_avg),dtype=np.uint8)
+        return img_avg
 
 
 def sources(image,thresholdSigma=1.5):

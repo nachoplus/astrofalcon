@@ -6,6 +6,7 @@ import argparse
 import logging
 import numpy as np
 import astropy.io.fits as pyfits
+import falconHelper
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconSave %(message)s',level=logging.DEBUG)
 
@@ -28,9 +29,13 @@ def takePicture(cameraServerIP,numFrames,format):
 
         if FIRST:
             accumulated=img
+            imageStack=[]
             FIRST=False
         else:
-            accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
+                if False:
+                        accumulated=cv2.addWeighted(accumulated,f,img,1-f,0)
+                else:
+                        accumulated=falconHelper.average(img,imageStack,n=numFrames)  
 
 
     timestamp = datetime.datetime.now()
