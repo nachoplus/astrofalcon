@@ -152,6 +152,8 @@ class ZWOcamera:
             start=datetime.datetime.now()
             with lock:
                 img=self.camera.capture_video_frame()
+            if len(img.shape)>2:
+                    img = img[:, :, ::1]  # Convert BGR to RGB
             end=datetime.datetime.now()
             interval=end-start
             #percent by which the image is resized
