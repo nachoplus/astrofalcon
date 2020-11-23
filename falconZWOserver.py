@@ -107,7 +107,7 @@ class ZWOcamera:
                                     'Name': 'Scale',
                                     'Description': 'Transport scale',
                                     'MaxValue': 100,
-                                    'MinValue': 10,
+                                    'MinValue': 5,
                                     'DefaultValue': 20,
                                     'IsAutoSupported': True,
                                     'IsWritable': True,
@@ -157,11 +157,13 @@ class ZWOcamera:
             end=datetime.datetime.now()
             interval=end-start
             #percent by which the image is resized
+            if self.scale<=5:
+                self.scale=5 
+
             scale_percent = self.scale
             width = int(img.shape[1] * scale_percent / 100)
             height = int(img.shape[0] * scale_percent / 100)
             dsize = (width, height)
-
             values={}
             values['times_start'] = start.strftime('%Y-%m-%d %H:%M:%S.%f')
             values['times_end'] = end.strftime('%Y-%m-%d %H:%M:%S.%f')

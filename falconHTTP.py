@@ -1,6 +1,7 @@
 # run this program on the Mac to display image streams from multiple RPis
 import cv2
 import imageTransport
+import falconHelper
 from flask import Response
 from flask import Flask
 from flask import render_template
@@ -18,25 +19,17 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:falconHTTP %(message)s',le
 
 
 def generate():
+    import baseClient
     cameraServerIP=app.config.get('cameraServerIP')
-    # grab global references to the output frame and lock variables
-    # loop over frames from the output stream
-    image_hub = imageTransport.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
+    hub=baseClient.baseClient(cameraServerIP=cameraServerIP)
+    imagesStack=[]
     while True:
-        queue, image =image_hub.recv_any()
-        print(queue)
-        msg=json.loads(queue)
-        
-        if msg['image_type']=='jpg':
-            #img=cv2.imdecode(image,1)
-            encodedImage=image
-        else:
-            img=image
-            (flag, encodedImage) = cv2.imencode(".jpg", img)
-        # ensure the frame was successfully encoded
-        # yield the output frame in the byte format
+        frame=hub.getFrame()
+        frame,imagesStack=falconHelper.average(frame,imagesStack,n=5)
+        frame=hub.displayBoard(frame)
+        jpg=hub.raw2jpg(frame)
         yield(b'--frame\r\n' b'Content-Type: image/jpg\r\n\r\n' + 
-                bytearray(encodedImage) + b'\r\n')
+                bytearray(jpg) + b'\r\n')
 
 @app.route("/")
 def index():

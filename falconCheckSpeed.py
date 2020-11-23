@@ -8,13 +8,13 @@ from functools import partial
 import argparse
 import logging
 import threading
-import falconBase
+import baseClient
 import datetime
 
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconCheckSpeed %(message)s',level=logging.INFO)
 
 
-class falconViewer(falconBase.falconBase):
+class falconViewer(baseClient.baseClient):
     def __init__(self,cameraServerIP):
         logging.info("Starting falcon Camara Viewer")
         super().__init__(cameraServerIP)       

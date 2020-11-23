@@ -18,23 +18,31 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:falconHelper %(message)s',
 
 
 def average(img,imagesStack,n=20):
-        # Generate noisy images using cv2.randn. Can use your own mean and std.
-        imagesStack.append(img)
-        nimages=len(imagesStack)
-        if nimages>n:
-                nimages=n
-                imagesStack.pop(0)
-        # For averaging create an empty array, then add images to this array.
-        if len(img.shape)>2:
-                img_avg=np.zeros((img.shape[0],img.shape[1],img.shape[2]),np.float32)
-        else:
-                img_avg=np.zeros((img.shape[0],img.shape[1]),np.float32)
-        for im in imagesStack:
-            img_avg=img_avg+im/nimages
-            #img_avg=img_avg+im
-        # Round the float values. Always specify the dtype
-        img_avg=np.array(np.round(img_avg),dtype=np.uint8)
-        return img_avg
+    if len(imagesStack)<=0:
+        logging.info(f'FIRST=True')
+        FIRST=True
+    else:
+        FIRST=False
+        
+    if not FIRST and ((img.shape!=imagesStack[0].shape) or (img.dtype!=imagesStack[0].dtype)):
+        FIRST=True
+        logging.info(f'FIRST=True {img.dtype}!={imagesStack[0].dtype} {img.shape}!={imagesStack[0].shape}')
+        
+    if FIRST:
+        imagesStack=[]
+
+    imagesStack.append(img)
+    nimages=len(imagesStack)
+    if nimages>n:
+        nimages=n
+        imagesStack.pop(0)
+    img_avg=np.mean( np.array(imagesStack), axis=0 )
+    # Round the float values. Always specify the dtype
+    img_avg=np.array(np.round(img_avg),dtype=np.uint8)
+    return img_avg,imagesStack
+                
+def crosshair(img):
+        pass
 
 
 def sources(image,thresholdSigma=1.5):

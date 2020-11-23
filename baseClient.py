@@ -10,12 +10,13 @@ import logging
 import threading
 import datetime
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:falconBase %(message)s',level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(levelname)s:baseClient %(message)s',level=logging.INFO)
 
 
-class falconBase:
+class baseClient:
     def __init__(self,cameraServerIP='localhost'):
-        logging.info("Starting falcon Camara Viewer")
+        logging.info(f"Starting falcon Client.") 
+        logging.info(f"Connecting to: tcp://{cameraServerIP}:5555")
         self.image_hub = imageTransport.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
         _msg, _image = self.image_hub.recv_any()
         self.msg=json.loads(_msg)
@@ -24,9 +25,28 @@ class falconBase:
         self.zmqcontext = zmq.Context()
         self.CmdSocket = self.zmqcontext.socket(zmq.REQ)
         self.CmdSocket.connect(f'tcp://{cameraServerIP}:5556')
-
-        #self.update()
-
+        
+    def getFrame(self,jpg=False):
+        queue, image = self.image_hub.recv_any()
+        self.arrivalTime=datetime.datetime.now()
+        self.msg=json.loads(queue)
+        logging.debug(f'times_interval:{self.msg["times_interval"]}')
+        if not jpg:
+                if self.msg['image_type']=='jpg':
+                        img=cv2.imdecode(image,1)
+                else:
+                        img=image
+        else:
+                if self.msg['image_type']=='jpg':
+                    img=image
+                else:
+                    (flag, img) = cv2.imencode(".jpg", image)
+        return img
+            
+    def raw2jpg(self,image):
+              (flag, img) = cv2.imencode(".jpg", image)
+              return img
+              
     def setROI(self,fnewOrigin,fnewSize):
         d=dict()
         d={'ROI':{'fnewOrigin':fnewOrigin,'fnewSize':fnewSize}}   
@@ -51,13 +71,16 @@ class falconBase:
             lineType)
 
     def displayBoard(self,img):
+            times_end=datetime.datetime.strptime(self.msg["times_end"],'%Y-%m-%d %H:%M:%S.%f')
+            now=datetime.datetime.now()
+
+            self.textOverlay(4,img,now.strftime('Now: %Y-%m-%d %H:%M:%S.%f'))
             self.textOverlay(1,img,f'START:{self.msg["times_start"]}')
             self.textOverlay(2,img,f'END:{self.msg["times_end"]}')
-            self.textOverlay(3,img,f'ELAPSE:{self.msg["times_interval"]}')
-            now=datetime.datetime.now()
-            times_end=datetime.datetime.strptime(self.msg["times_end"],'%Y-%m-%d %H:%M:%S.%f')
-            self.textOverlay(4,img,now.strftime('%Y-%m-%d %H:%M:%S.%f'))
-            self.textOverlay(5,img,f'Network lag: {str(now-times_end)}')
-            
+            self.textOverlay(3,img,f'Exposure:{self.msg["times_interval"]}')
+            self.textOverlay(5,img,f'Network lag: {str(self.arrivalTime-times_end)}')
+            self.textOverlay(6,img,f'Processing time: {str(now-self.arrivalTime)}')
+            self.textOverlay(7,img,f'Total time: {str(now-times_end)}')
+            return img
 
 
