@@ -19,6 +19,17 @@ class falconViewer(baseClient.baseClient):
     def __init__(self,cameraServerIP):
         logging.info("Starting falcon Camara Viewer")
         super().__init__(cameraServerIP)
+        cv2.namedWindow('FalconViewer')
+        cv2.namedWindow('FalconControls',cv2.WINDOW_NORMAL)
+        for key,cn in self.controls.items():
+            if not cn['IsWritable']:
+                continue
+            if cn['MaxValue']>=1000:
+                mult=1000
+            else:
+                mult=1
+            cv2.createTrackbar(f'{key}', 'FalconControls',int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
+
         softControls={ 'Accumulate': {
                                     'Name': 'Accumulate',
                                     'Description': 'Accumulate',
@@ -53,37 +64,8 @@ class falconViewer(baseClient.baseClient):
             if cv2.getTrackbarPos(f'{key}', 'FalconControls')!=values[key]:
                 cv2.setTrackbarPos(f'{key}', 'FalconControls', values[key]) 
 
-    def cb(self,key,x):
-        cn=self.controls[key]
-        if False:
-            if cn['MaxValue']>=1000:
-                mult=1000
-            else:
-                mult=1
-        else:
-            mult=1
-
-        ControlType=cn['ControlType']
-        d=dict()
-        d={'set_control_value':{ControlType:x*mult}}   
-        logging.info(f'Sending {d}')
-        self.CmdSocket.send_string(json.dumps(d))
-        reply = self.CmdSocket.recv()
-        logging.info(reply)
 
     def run(self):
-        cv2.namedWindow('FalconViewer')
-        cv2.namedWindow('FalconControls',cv2.WINDOW_NORMAL)
-        for key,cn in self.controls.items():
-            if not cn['IsWritable']:
-                continue
-            print(key,  cn['MinValue'], cn['MaxValue'])
-            if cn['MaxValue']>=1000:
-                mult=1000
-            else:
-                mult=1
-            cv2.createTrackbar(f'{key}', 'FalconControls',\
-                 int(cn['MinValue']/mult), int(cn['MaxValue']/mult), partial(self.cb,key))
        
         imagesStack=[]
         while True:  # show streamed images until Ctrl-C
@@ -122,9 +104,14 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument("-d", "--cameraServerIP", type=str, default='localhost',
         help="ip address of Camera Server")
-
+    ap.add_argument("-l", "--listcontrols", action="store_true", help="list controls")
     args = vars(ap.parse_args())
     logging.info(f"Connecting to:{args['cameraServerIP']}...")
     viewer=falconViewer(args['cameraServerIP'])
+    if args['listcontrols']:
+        print("List of controls:")
+        viewer.listControls()
+        exit(0)
+ 
     logging.info(f"{args['cameraServerIP']} CONNETED")
     viewer.run()

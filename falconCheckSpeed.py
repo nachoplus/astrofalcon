@@ -16,10 +16,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:falconCheckSpeed %(message
 
 class falconViewer(baseClient.baseClient):
     def __init__(self,cameraServerIP):
-        logging.info("Starting falcon Camara Viewer")
-        super().__init__(cameraServerIP)       
-
-
+        super().__init__(cameraServerIP)     
+        logging.info("Starting falcon Camara Checkspeed")
+  
     def run(self):
         while True:  # show streamed images until Ctrl-C
             queue, image = self.image_hub.recv_any()

@@ -50,9 +50,9 @@ if __name__ == '__main__':
     # construct the argument parser and parse command line arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-i", "--ip", type=str, default='0.0.0.0',
-        help="ip address of the device")
+        help="http ip address")
     ap.add_argument("-o", "--port", type=int, default=8088,
-        help="ephemeral port number of the server (1024 to 65535)")
+        help="http port number of the server (1024 to 65535)")
     ap.add_argument("-d", "--cameraServerIP", type=str, default='localhost',
         help="ip address of Camera Server")
 

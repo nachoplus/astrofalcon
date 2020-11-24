@@ -14,18 +14,45 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:baseClient %(message)s',le
 
 
 class baseClient:
-    def __init__(self,cameraServerIP='localhost'):
+    def __init__(self,cameraServerIP='localhost',controlSet={}):
         logging.info(f"Starting falcon Client.") 
         logging.info(f"Connecting to: tcp://{cameraServerIP}:5555")
         self.image_hub = imageTransport.ImageHub(open_port=f'tcp://{cameraServerIP}:5555', REQ_REP=False)
         _msg, _image = self.image_hub.recv_any()
         self.msg=json.loads(_msg)
         self.controls=self.msg['controls']
-        print(self.controls)
         self.zmqcontext = zmq.Context()
         self.CmdSocket = self.zmqcontext.socket(zmq.REQ)
         self.CmdSocket.connect(f'tcp://{cameraServerIP}:5556')
         
+    def cb(self,key,x):
+        if not key in self.controls.keys():
+                logging.info(f"Invalid control. {key} do not exist")                
+                return
+        cn=self.controls[key]
+        if x < cn['MinValue'] or x >cn['MaxValue']:
+                logging.info(f"Invalid value for {key} control. {x} is not in {cn['MaxValue']}..{cn['MaxValue']} range")
+                return
+        ControlType=cn['ControlType']
+        d=dict()
+        d={'set_control_value':{ControlType:x}}   
+        logging.info(f'Sending {d}')
+        self.CmdSocket.send_string(json.dumps(d))
+        reply = self.CmdSocket.recv()
+        logging.info(reply)   
+             
+    def listControls(self):
+        for key,cn in self.controls.items():
+                if not cn['IsWritable']:
+                        continue    
+                print(f"{key} min:{cn['MinValue']} max:{cn['MaxValue']}")    
+        return self.controls
+
+    def setControls(self,controlsSet):
+        for key,value in controlsSet.items():
+                logging.info(f'Setting {key} = {value}')
+                self.cb(key,value)
+                        
     def getFrame(self,jpg=False):
         queue, image = self.image_hub.recv_any()
         self.arrivalTime=datetime.datetime.now()
