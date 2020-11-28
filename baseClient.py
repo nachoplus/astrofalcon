@@ -96,6 +96,7 @@ class baseClient:
             fontScale,
             fontColor,
             lineType)
+            
 
     def displayBoard(self,img):
             times_end=datetime.datetime.strptime(self.msg["times_end"],'%Y-%m-%d %H:%M:%S.%f')

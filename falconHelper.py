@@ -13,7 +13,7 @@ import io
 from PIL import Image
 import matplotlib.pyplot as plt
 
-logging.basicConfig(format='%(asctime)s %(levelname)s:falconHelper %(message)s',level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(levelname)s:falconHelper %(message)s',level=logging.INFO)
 
 
 
@@ -42,7 +42,12 @@ def average(img,imagesStack,n=20):
     return img_avg,imagesStack
                 
 def crosshair(img):
-        pass
+            x=img.shape[1]/2
+            y=img.shape[0]/2
+            r=int(y/3)
+            cv2.drawMarker(img, (int(x),int(y)), color=(0,0,200), markerType=cv2.MARKER_CROSS, thickness=1)
+            cv2.circle(img, (int(x),int(y)), r, color=(0,0,200), thickness=1)
+            return img
 
 
 def sources(image,thresholdSigma=1.5):
@@ -59,6 +64,8 @@ def sources(image,thresholdSigma=1.5):
 
        
 def drawSources(objects,img):
+        if len(objects)<=0:
+                return
         color=(255,0,0)
         w=2
         idx=objects['flux'].argmax()
@@ -73,17 +80,31 @@ def drawSources(objects,img):
         
 
 def overlayGraph(img,values,title='FWHM'):
-        plt.figure()
-        plt.plot(values)
-        plt.title(title)
+        alpha=0.5
+        dpi=100
+        dx=img.shape[1]/dpi
+        dy=img.shape[0]/dpi
+        fig=plt.figure(figsize=(dx,dy),dpi=dpi,facecolor='black')
+        axs = fig.subplots(2, 2)
+        axs[0,0].set_facecolor("black")
+        axs[0,1].set_facecolor("black")
+        axs[1,0].set_facecolor("black")
+        axs[1,1].set_facecolor("black")
+        axs[1,1].plot(values)
+        axs[1,1].set_title(title)
         buf = io.BytesIO()
-        plt.savefig(buf, format='png')
+        fig.savefig(buf, format='png')
         buf.seek(0)
-        im = Image.open(buf)
-        img1 = cv2.imread(buf, -1)
+        im = Image.open(buf).convert('RGB') 
+        img1 = np.array(im)[:, :, ::-1]
+        #img1 = np.array(im) 
+        #img1 = cv2.imread(im)
         buf.close()
         # apply the overlay
-        cv2.addWeighted(img, alpha, img1, 1 - alpha,0, img)
+        try:
+                cv2.addWeighted(img, 1-alpha, img1, alpha,0, img)
+        except:
+                pass
         return img
 	
 def fwhm(objects):

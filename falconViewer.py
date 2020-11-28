@@ -68,6 +68,7 @@ class falconViewer(baseClient.baseClient):
     def run(self):
        
         imagesStack=[]
+        values=[]
         while True:  # show streamed images until Ctrl-C
           
             k=cv2.waitKey(1)
@@ -90,12 +91,17 @@ class falconViewer(baseClient.baseClient):
 
             img=self.getFrame()                
             frame,imagesStack=falconHelper.average(img,imagesStack,n=10)
-                
-            #objects,bkg,subtractred=falconHelper.sources(frame,thresholdSigma=5)                              
-            #screen=frame.copy()
-            #screen=subtractred
-            #falconHelper.drawSources(objects,frame)
+            objects,bkg,subtractred=falconHelper.sources(frame,thresholdSigma=5)                              
+            falconHelper.drawSources(objects,frame)
+            values.append(bkg.globalrms)
+            nimages=len(values)
+            if nimages>100:
+                nimages=100
+                values.pop(0)
+            falconHelper.overlayGraph(frame,np.array(values))            
+            falconHelper.crosshair(frame)  
             self.displayBoard(frame)
+            
             cv2.imshow('FalconViewer', frame)           
 
 
