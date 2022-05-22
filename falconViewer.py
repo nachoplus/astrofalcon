@@ -90,17 +90,17 @@ class falconViewer(baseClient.baseClient):
                 self.setROI(fnewOrigin,fnewSize)
 
             img=self.getFrame()                
-            frame,imagesStack=falconHelper.average(img,imagesStack,n=10)
-            objects,bkg,subtractred=falconHelper.sources(frame,thresholdSigma=5)                              
-            falconHelper.drawSources(objects,frame)
-            values.append(bkg.globalrms)
+            frame,imagesStack=falconHelper.average(img,imagesStack,n=1)
+            #objects,bkg,subtractred=falconHelper.sources(frame,thresholdSigma=5)                              
+            #falconHelper.drawSources(objects,frame)
+            #values.append(bkg.globalrms)
             nimages=len(values)
             if nimages>100:
                 nimages=100
                 values.pop(0)
-            falconHelper.overlayGraph(frame,np.array(values))            
-            falconHelper.crosshair(frame)  
-            self.displayBoard(frame)
+            #falconHelper.overlayGraph(frame,np.array(values))            
+            #falconHelper.crosshair(frame)  
+            #self.displayBoard(frame)
             
             cv2.imshow('FalconViewer', frame)           
 

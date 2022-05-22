@@ -1,1 +1,1 @@
-export ZWO_ASI_LIB=/home/pi/ZWOASICAP/SDK/lib/armv7/libASICamera2.so
+export ZWO_ASI_LIB=/home/nacho/work/sandbox/asisdk/lib/x64/libASICamera2.so
