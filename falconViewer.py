@@ -100,7 +100,7 @@ class falconViewer(baseClient.baseClient):
                 values.pop(0)
             #falconHelper.overlayGraph(frame,np.array(values))            
             #falconHelper.crosshair(frame)  
-            #self.displayBoard(frame)
+            self.displayBoard(frame)
             
             cv2.imshow('FalconViewer', frame)           
 

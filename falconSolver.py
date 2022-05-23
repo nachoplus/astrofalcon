@@ -20,8 +20,16 @@ import imageio
 logging.basicConfig(format='%(asctime)s %(levelname)s:falconViewer %(message)s',level=logging.INFO)
 
 
-def plate_solve(fname, L=3, H=7, ra=None, dec=None):
+def plate_solve(img, L=3, H=7, ra=None, dec=None):
     dirn = 'astrometry_output'
+    #Convert to PIL
+    pilimg=Image.fromarray(img)
+    tempfile = MemoryTempfile()
+    # Write PIL Image to in-memory PNG
+    ffile=tempfile.NamedTemporaryFile()
+    fname=ffile.name
+    print(fname)
+    pilimg.save(fname, format="png")    
     wcsfile = f"{dirn}/{fname.split('/')[-1]}.wcs"
     axyfile = f"{dirn}/{fname.split('/')[-1]}.axy"
     print(wcsfile)    
@@ -67,7 +75,6 @@ class falconSolver(baseClient.baseClient):
         cv2.namedWindow('FalconSolver')
 
 
-
     def run(self):
      
         values=[]
@@ -75,14 +82,6 @@ class falconSolver(baseClient.baseClient):
             k=cv2.waitKey(1)
             img=self.getFrame()     
             print(img.shape)    
-            #Convert to PIL
-            pilimg=Image.fromarray(img)
-            tempfile = MemoryTempfile()
-            # Write PIL Image to in-memory PNG
-            ffile=tempfile.NamedTemporaryFile()
-            fname=ffile.name
-            print(fname)
-            pilimg.save(fname, format="png")    
             (ra,dec),pixel=plate_solve(fname, L=3, H=70, ra=None, dec=None)
             values.append([ra,dec,pixel])
             print(values)

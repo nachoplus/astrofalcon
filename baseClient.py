@@ -108,7 +108,8 @@ class baseClient:
             self.textOverlay(3,img,f'Exposure:{self.msg["times_interval"]}')
             self.textOverlay(5,img,f'Network lag: {str(self.arrivalTime-times_end)}')
             self.textOverlay(6,img,f'Processing time: {str(now-self.arrivalTime)}')
-            self.textOverlay(7,img,f'Total time: {str(now-times_end)}')
+            self.textOverlay(7,img,f'Total lag: {str(now-times_end)}')
+            print(f'msg: {self.msg["image_type"]}')
             return img
 
 

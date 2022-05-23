@@ -62,7 +62,7 @@ class ZWOcamera:
             logging.info('Found %d cameras' % num_cameras)
             for n in range(num_cameras):
                 logging.info('    %d: %s' % (n, cameras_found[n]))
-            # TO DO: allow user to select a camera
+            #TODO: allow user to select a camera
             camera_id = 0
             logging.info('Using #%d: %s' % (camera_id, cameras_found[camera_id]))
 
@@ -90,7 +90,7 @@ class ZWOcamera:
 
         self.camera.disable_dark_subtract()
         self.camera.set_control_value(asi.ASI_GAIN, 570)
-        self.camera.set_control_value(asi.ASI_EXPOSURE, 500000)
+        self.camera.set_control_value(asi.ASI_EXPOSURE, 50000)
         self.camera.set_control_value(asi.ASI_WB_B, 50)
         self.camera.set_control_value(asi.ASI_WB_R, 50)
         self.camera.set_control_value(asi.ASI_GAMMA, 30)
@@ -149,12 +149,13 @@ class ZWOcamera:
         self.camera.start_video_capture()
 
         while self.RUN:
-            start=datetime.datetime.now()
             with lock:
+                start=datetime.datetime.now()                
                 img=self.camera.capture_video_frame()
+                end=datetime.datetime.now()
             if len(img.shape)>2:
                     img = img[:, :, ::1]  # Convert BGR to RGB
-            end=datetime.datetime.now()
+            
             interval=end-start
             #percent by which the image is resized
             if self.scale<=5:
@@ -231,15 +232,16 @@ class ZWOcamera:
                             logging.debug("Changed")
                     if int(key)==23:
                             self.bins=int(v)
+                            with lock:
+                                logging.debug("Changing img format")
+                                self.camera.stop_video_capture()
+                                self.camera.set_roi(bins=self.bins)
+                                self.camera.start_video_capture()
+                                logging.debug("Changed")
+                            print(f'binning:{self.camera.get_bin()}')
 
 
         if 'ROI' in msg:
-            value=msg['ROI']
-            fnewOrigin=value['fnewOrigin']
-            fnewSize=value['fnewSize']
-            self.setROI(fnewOrigin,fnewSize)
-
-        if 'bin' in msg:
             value=msg['ROI']
             fnewOrigin=value['fnewOrigin']
             fnewSize=value['fnewSize']
