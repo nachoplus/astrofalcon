@@ -101,15 +101,16 @@ class baseClient:
     def displayBoard(self,img):
             times_end=datetime.datetime.strptime(self.msg["times_end"],'%Y-%m-%d %H:%M:%S.%f')
             now=datetime.datetime.now()
-
-            self.textOverlay(4,img,now.strftime('Now: %Y-%m-%d %H:%M:%S.%f'))
+            exposure=str(self.msg["controls_values"]["Exposure"])
             self.textOverlay(1,img,f'START:{self.msg["times_start"]}')
             self.textOverlay(2,img,f'END:{self.msg["times_end"]}')
-            self.textOverlay(3,img,f'Exposure:{self.msg["times_interval"]}')
+            self.textOverlay(8,img,f'Exposure:{exposure}')
+            #self.textOverlay(3,img,f'Interval:{self.msg["times_interval"]}')
+            self.textOverlay(4,img,now.strftime('Now: %Y-%m-%d %H:%M:%S.%f'))
             self.textOverlay(5,img,f'Network lag: {str(self.arrivalTime-times_end)}')
             self.textOverlay(6,img,f'Processing time: {str(now-self.arrivalTime)}')
             self.textOverlay(7,img,f'Total lag: {str(now-times_end)}')
-            print(f'msg: {self.msg["image_type"]}')
+            print(f'exposure: {exposure}')
             return img
 
 

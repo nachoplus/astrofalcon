@@ -49,11 +49,12 @@ class falconViewer(baseClient.baseClient):
                                     'IsWritable': True,
                                     'ControlType': 25},  
         }
+        self.update()
         
     def update(self):
         if not self.msg is None:
             self.set_trackbars()
-        threading.Timer(.10, self.update).start()
+        #threading.Timer(.50, self.update).start()
 
 
 
